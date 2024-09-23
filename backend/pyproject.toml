@@ -1,13 +1,24 @@
 [tool.poetry]
 name = "sport-app"
+packages = [
+    { include = "src" },
+]
 version = "0.1.0"
 description = ""
 authors = ["immone <antti.imm1n@gmail.com>"]
 readme = "README.md"
 
+[tool.pytest]
+testpaths = ["tests"]
+
 [tool.poetry.dependencies]
 python = "^3.11"
 flask = "^3.0.3"
+flask-sqlalchemy = "^3.1.1"
+pysat = "^3.2.0"
+pytest = "^8.3.3"
+python-sat = "^1.8.dev13"
+pypblib = "^0.0.4"
 
 
 [tool.poetry.group.dev.dependencies]
