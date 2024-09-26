@@ -2,71 +2,97 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
-}
-
 body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
+  background-color: #09090b;
+  color: #ffffff;
+  font-family: 'Inter', sans-serif;
 }
 
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+#root {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
 }
 
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+.card {
+  padding: 2em;
+  background-color:white;
+  border-radius: 8px; /* Default rounded corners */
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Inter', sans-serif;
+  color: #ffffff;
+}
+
+.toast {
+  background-color: rgba(0, 0, 0, 0.75);
+  border-radius: 0.375rem; /* Rounded corners */
+  padding: 1rem;
+  color: white;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+/* New class for rounded corners */
+.rounded-corners {
+  border-radius: 0.375rem; /* Adjust this value for desired roundness */
+}
+
+.button {
+  border-radius: 8px; /* Rounded corners */
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.button-outline {
+  border: 1px solid #ffffff;
+  background-color: transparent;
+  color: #ffffff;
+}
+
+.button-outline:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.custom-calendar {
+  background-color: #27272a; /* Set background color similar to the main background */
+  border-radius: 8px; /* Rounded corners for the calendar */
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5); /* Subtle shadow */
+  padding: 1rem; /* Padding inside the calendar */
+  border: 1px solid rgba(255, 255, 255, 0.2); /* Light border with transparency */
+}
+
+/* Style for weekdays */
+.custom-calendar .calendar-header,
+.custom-calendar .calendar-weekday {
+  color: #b0b0b0; /* Gray color for the weekdays */
+}
+
+.custom-calendar .calendar-day {
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.custom-calendar .calendar-day:hover {
+  background-color: rgba(255, 255, 255, 0.1); /* Light background on hover */
+  color: #ffffff; /* Text color on hover */
+}
+
+.custom-calendar .calendar-day.selected {
+  background-color: blue; /* Change to blue for selected date */
+  color: white; /* Text color for selected date */
+}
+
+.custom-calendar .calendar-day.current {
+  background-color: navy; /* Keep navy for the current date */
+  color: white; /* Text color for the current date */
+}
+
+.custom-calendar .calendar-header {
+  color: #ffffff; /* Header text color */
+  font-weight: bold; /* Header text weight */
+}
+
+.custom-calendar .calendar-weekday {
+  color: #ffffff; /* Weekday text color */
 }
