@@ -24,7 +24,7 @@ export const Toast: React.FC<ToastProps> = ({ message }) => {
   if (!visible) return null;
 
   return (
-    <div className="fixed bottom-4 right-4 bg-transparent border border-white rounded-corners shadow-md p-4"> {/* Updated to use rounded-lg */}
+    <div className="fixed top-4 right-4 bg-transparent border border-white rounded-corners shadow-md p-4"> {/* Updated to use rounded-lg */}
       <span className="text-white">{message}</span>
     </div>
   );
