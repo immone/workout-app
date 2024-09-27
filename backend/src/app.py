@@ -1,6 +1,8 @@
 from flask import Flask, jsonify, request
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app, resources={r"*": {"origins": "*"}})
 
 # Sample data
 items = [
@@ -17,11 +19,28 @@ def get_items():
     return jsonify(items)
 
 @app.route('/items', methods=['POST'])
-def create_item():
+def create_item():  
     new_item = request.get_json()
     new_item['id'] = len(items) + 1  # Simple ID assignment
     items.append(new_item)
     return jsonify(new_item), 201
 
+# Temp endpoint for response
+@app.route('/api/schedule', methods=['POST'])
+def receive_schedule():    
+    try:
+        schedule_data = request.get_json()
+        response = {
+            "message": "Schedule received successfully!",
+            "received_times": schedule_data.get("times", []),
+            "received_days": schedule_data.get("days", [])
+        }
+        return jsonify(response), 200
+    except Exception as e:
+        print('Error processing request:', e)  
+        return jsonify({"error": "Invalid data"}), 400
+
+
 if __name__ == '__main__':
-    app.run(debug=True)  # Enable debug mode for development
+    port = 5000
+    app.run(debug=True, port=port) 

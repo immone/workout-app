@@ -10,6 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { sendSchedule } from '@/services/schedule';
 
 const App: React.FC = () => {
   const [workoutName, setWorkoutName] = useState('');
@@ -19,6 +20,7 @@ const App: React.FC = () => {
   const [confirmedDays, setConfirmedDays] = useState<number>(-1);
   const [times, setTimes] = useState<string[]>([]);
   const [isScheduleFound, setIsScheduleFound] = useState(false);
+  const [scheduleResponse, setScheduleResponse] = useState<any>(null);  // To store backend response
 
   const handleWorkoutNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setWorkoutName(e.target.value);
@@ -45,9 +47,23 @@ const App: React.FC = () => {
     setConfirmedDays((prev) => prev + 1);
   };
 
-  const handleFindSchedule = () => {
+  const handleFindSchedule = async () => {
     setIsScheduleFound(true);
+    console.log(times, chosenDays)
     setToastMessage("Finding your schedule...");
+
+    try {
+      const scheduleData = {
+        times: times,
+        days: chosenDays,
+      };
+
+      const response = await sendSchedule(scheduleData);  // API call
+      setToastMessage("Schedule sent successfully!");
+      setScheduleResponse(response);  
+    } catch (error) {
+      setToastMessage("Failed to send schedule.");
+    }
   };
 
   return (
@@ -112,6 +128,7 @@ const App: React.FC = () => {
                   times={times} 
                   chosenDays={chosenDays} 
                   onFindSchedule={handleFindSchedule} 
+                  scheduleResponse={scheduleResponse} 
                 />
               )}
             </CardContent>
@@ -130,6 +147,12 @@ const App: React.FC = () => {
                   </li>
                 ))}
               </ul>
+              {scheduleResponse && (
+                <>
+                  <p className="mt-4">Backend Response:</p>
+                  <p>{scheduleResponse.message}</p>
+                </>
+              )}
             </CardContent>
           </Card>
         )}
@@ -206,24 +229,34 @@ const TimeSlotSelection: React.FC<{ onConfirm: (dayTimes: string[]) => void; set
   );
 };
 
-const ConfirmedTimesView: React.FC<{ times: string[]; chosenDays: Date[]; onFindSchedule: () => void }> = ({
+const ConfirmedTimesView: React.FC<{ times: string[]; chosenDays: Date[]; onFindSchedule: () => void; scheduleResponse: any }> = ({
   times,
   chosenDays,
   onFindSchedule,
+  scheduleResponse,
 }) => {
   return (
     <div>
       <h2 className="text-lg text-white mb-4 text-center">Confirmed Times</h2>
-      <ul className="list-disc text-white">
-        {times.map((timeSlot, index) => (
-          <li key={index} className="mb-2">
-            {chosenDays[index]?.toLocaleDateString()}: {timeSlot || 'No time slots selected'}
+      <ul className="text-white list-disc">
+        {times.map((time, index) => (
+          <li key={index}>
+            {chosenDays[index]?.toLocaleDateString()}: {time ? time : "No time slots selected"}
           </li>
         ))}
       </ul>
-      <Button onClick={onFindSchedule} className="bg-blue-500 text-white rounded-corners mt-4">
+      <Button 
+        onClick={onFindSchedule}
+        className="bg-green-500 text-white rounded-corners w-full mt-4"
+      >
         Find Schedule
       </Button>
+      {scheduleResponse && (
+        <div className="mt-4">
+          <p className="text-white">Backend Response:</p>
+          <p className="text-white">{scheduleResponse.message}</p>
+        </div>
+      )}
     </div>
   );
 };
