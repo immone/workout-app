@@ -1,6 +1,12 @@
 from datetime import datetime
 
 class Encoder:
+    """
+        Class responsible for encoding and decoding the chosen times between integer and (date, time) representations.
+        Constructor parameters:
+            available_dates: dates in ISO 8601 format
+            available_times: suitable times as a list of strings
+    """
     def __init__(self, available_dates, available_times):
         """Initialize the Encoder with available dates and times."""
         self.available_dates = self.flatten_list(available_dates)
