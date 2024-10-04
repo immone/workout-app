@@ -6,24 +6,45 @@ import { Toast } from "@/components/Toast";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
+  CardDescription,
 } from "@/components/ui/card";
 import { sendSchedule } from '@/services/schedule';
 
+
 const App: React.FC = () => {
   const [workoutName, setWorkoutName] = useState('');
+  const [preferredWorkouts, setPreferredWorkouts] = useState<number | ''>(''); 
+  const [currentWorkoutInput, setCurrentWorkoutInput] = useState<number | ''>(''); 
   const [toastMessage, setToastMessage] = useState<string | null>(null);  
   const [chosenDays, setChosenDays] = useState<Date[]>([]);
   const [isWorkoutNameSubmitted, setIsWorkoutNameSubmitted] = useState(false);
   const [confirmedDays, setConfirmedDays] = useState<number>(-1);
-  const [times, setTimes] = useState<string[][]>([]); // 2D array for times
+  const [times, setTimes] = useState<string[][]>([]); 
   const [isScheduleFound, setIsScheduleFound] = useState(false);
   const [scheduleResponse, setScheduleResponse] = useState<any>(null);
 
   const handleWorkoutNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setWorkoutName(e.target.value);
+  };
+
+  const handleCurrentWorkoutInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+
+    if (value === '' || /^[1-9]\d*$/.test(value)) {
+      setCurrentWorkoutInput(value === '' ? '' : Number(value));
+    }
+  };
+
+  const handlePreferredWorkoutsConfirm = () => {
+    if (currentWorkoutInput === '') {
+      setToastMessage('Please enter a preferred number of workouts!');
+    } else {
+      setPreferredWorkouts(currentWorkoutInput);
+      setToastMessage(`Preferred number of workouts set to: ${currentWorkoutInput}`);
+      setCurrentWorkoutInput('');
+    }
   };
 
   const handleSubmit = () => {
@@ -36,30 +57,31 @@ const App: React.FC = () => {
   };
 
   const handleDateSelection = (dates: Date[]) => {
-    setChosenDays(dates);
+    // Sort the selected dates in chronological order
+    const sortedDates = dates.sort((a, b) => a.getTime() - b.getTime());
+    setChosenDays(sortedDates);
     setConfirmedDays(0);
-    setTimes(Array(dates.length).fill([])); // Initialize times as an empty array for each day
+    setTimes(Array(sortedDates.length).fill([])); 
   };
-
   const handleConfirmTimeSlot = (dayIndex: number, dayTimes: string[]) => {
     const newTimes = [...times];
-    newTimes[dayIndex] = dayTimes; // Store times for each day
+    newTimes[dayIndex] = dayTimes; 
     setTimes(newTimes);
     setConfirmedDays((prev) => prev + 1);
   };
 
   const handleFindSchedule = async () => {
     setIsScheduleFound(true);
-    console.log(times, chosenDays);
     setToastMessage("Finding your schedule...");
 
     try {
       const scheduleData = {
         times: times,
         days: chosenDays,
+        n: Math.min(times.length, preferredWorkouts)
       };
 
-      const response = await sendSchedule(scheduleData);  // API call
+      const response = await sendSchedule(scheduleData);  
       setToastMessage("Schedule sent successfully!");
       setScheduleResponse(response);  
     } catch (error) {
@@ -99,9 +121,25 @@ const App: React.FC = () => {
                   />
                   <Button 
                     onClick={handleSubmit}
-                    className="bg-blue-500 text-white rounded-corners w-full transition duration-200 hover:bg-blue-600 mb-4"
+                    className="bg-green-500 text-white rounded-corners w-full transition duration-200 hover:bg-blue-600 mb-4"
                   >
                     Submit
+                  </Button>
+                </>
+              ) : preferredWorkouts === '' ? (
+                <>
+                  <Input
+                    type="text"
+                    placeholder="Preferred number of workouts"
+                    value={currentWorkoutInput} 
+                    onChange={handleCurrentWorkoutInputChange} 
+                    className="mb-4 border border-blue-300 rounded focus:outline-none focus:ring focus:ring-blue-400 bg-gray-800 text-white text-center"
+                  />
+                  <Button 
+                    onClick={handlePreferredWorkoutsConfirm}
+                    className="bg-green-500 text-white rounded-corners transition duration-200 hover:bg-blue-600 mb-4"
+                  >
+                    Confirm
                   </Button>
                 </>
               ) : chosenDays.length === 0 ? (
@@ -114,9 +152,9 @@ const App: React.FC = () => {
               ) : confirmedDays < chosenDays.length ? (
                 <>
                   <p className="text-white mb-4">
-                    Select time slots for {chosenDays[confirmedDays]?.toLocaleDateString()}
+                    Select clock times for {chosenDays[confirmedDays]?.toLocaleDateString()}
                   </p>
-                  <TimeSlotSelection
+                  <ClockTimeSlotSelection
                     key={confirmedDays}
                     onConfirm={(dayTimes: string[]) =>
                       handleConfirmTimeSlot(confirmedDays, dayTimes)
@@ -126,8 +164,6 @@ const App: React.FC = () => {
                 </>
               ) : (
                 <ConfirmedTimesView 
-                  times={times} 
-                  chosenDays={chosenDays} 
                   onFindSchedule={handleFindSchedule} 
                   scheduleResponse={scheduleResponse} 
                 />
@@ -135,27 +171,7 @@ const App: React.FC = () => {
             </CardContent>
           </Card>
         ) : (
-          <Card className="bg-zinc-900 shadow-lg rounded-corners p-8 w-[380px]">
-            <CardHeader>
-              <CardTitle className="text-middle text-3xl">Schedule</CardTitle>
-            </CardHeader>
-            <CardContent className="text-white">
-              <p>Your confirmed schedule:</p>
-              <ul className="list-disc">
-                {times.map((timeSlots, index) => (
-                  <li key={index} className="mb-2">
-                    {chosenDays[index]?.toLocaleDateString()}: {timeSlots.length > 0 ? timeSlots.join(', ') : 'No time slots selected'}
-                  </li>
-                ))}
-              </ul>
-              {scheduleResponse && (
-                <>
-                  <p className="mt-4">Backend Response:</p>
-                  <p>{scheduleResponse.message}</p>
-                </>
-              )}
-            </CardContent>
-          </Card>
+          <ScheduleDisplay scheduleResponse={scheduleResponse} />
         )}
       </main>
 
@@ -168,95 +184,90 @@ const App: React.FC = () => {
   );
 };
 
-const TimeSlotSelection: React.FC<{ onConfirm: (dayTimes: string[]) => void; setToastMessage: (message: string) => void; }> = ({
+const ClockTimeSlotSelection: React.FC<{ onConfirm: (dayTimes: string[]) => void; setToastMessage: (message: string) => void; }> = ({
   onConfirm,
   setToastMessage,
 }) => {
-  const [timeSlots, setTimeSlots] = useState<string[]>([]);
+  const availableTimes = [
+    '08:00', '09:00', '10:00', '11:00',
+    '12:00', '13:00', '14:00', '15:00',
+    '16:00', '17:00', '18:00', '19:00',
+    '20:00', '21:00'
+  ];
 
-  const addTimeSlot = () => {
-    const newTimeSlot = '';
-    if (!timeSlots.includes(newTimeSlot)) {
-      setTimeSlots([...timeSlots, newTimeSlot]);
-    } else {
-      setToastMessage("This time slot is already added!");
-    }
+  const [selectedTimes, setSelectedTimes] = useState<string[]>([]);
+
+  const handleTimeToggle = (time: string) => {
+    setSelectedTimes((prev) => 
+      prev.includes(time) 
+        ? prev.filter(t => t !== time) 
+        : [...prev, time] 
+    );
   };
 
-  const removeTimeSlot = (index: number) => {
-    const newTimeSlots = [...timeSlots];
-    newTimeSlots.splice(index, 1);
-    setTimeSlots(newTimeSlots);
-  };
-
-  const handleTimeChange = (index: number, value: string) => {
-    const newTimeSlots = [...timeSlots];
-    if (!newTimeSlots.includes(value) || newTimeSlots[index] === value) {
-      newTimeSlots[index] = value;
-      setTimeSlots(newTimeSlots);
-    } else {
-      setToastMessage("This time slot is already added!");
+  const handleConfirm = () => {
+    if (selectedTimes.length === 0) {
+      setToastMessage("Please select at least one time slot!");
+      return;
     }
+    onConfirm(selectedTimes);
   };
 
   return (
     <div className="flex flex-col items-center">
-      {timeSlots.map((slot, index) => (
-        <div key={index} className="flex space-x-2 items-center mb-2">
-          <input
-            type="time"
-            value={slot}
-            onChange={(e) => handleTimeChange(index, e.target.value)}
-            className="bg-gray-800 text-white p-2 rounded"
-          />
+      <p className="text-white mb-4">Select your preferred times:</p> {/* Added mb-4 for margin-bottom */}
+      <div className="grid grid-cols-2 gap-2">
+        {availableTimes.map((time) => (
           <Button
-            onClick={() => removeTimeSlot(index)}
-            className="bg-red-500 text-white rounded-corners text-xs px-2 py-1"
+            key={time}
+            className={`transition duration-200 ${selectedTimes.includes(time) ? 'bg-green-500' : 'bg-blue-500'} text-white rounded-corners w-full`}
+            onClick={() => handleTimeToggle(time)}
           >
-            Remove
+            {time}
           </Button>
-        </div>
-      ))}
-      <Button onClick={addTimeSlot} className="bg-blue-500 text-white rounded-corners w-full mt-2">
-        Add Time Slot
-      </Button>
+        ))}
+      </div>
       <Button
-        onClick={() => onConfirm(timeSlots.filter(slot => slot))}
-        className="bg-green-500 text-white rounded-corners w-full mt-4"
+        className="mt-4 bg-green-500 text-white rounded-corners"
+        onClick={handleConfirm}
       >
-        Confirm Time Slots
+        Confirm time
       </Button>
     </div>
   );
 };
 
-const ConfirmedTimesView: React.FC<{ times: string[][]; chosenDays: Date[]; onFindSchedule: () => void; scheduleResponse: any }> = ({
-  times,
-  chosenDays,
-  onFindSchedule,
-  scheduleResponse,
-}) => {
+const ConfirmedTimesView: React.FC<{ onFindSchedule: () => void; scheduleResponse: any; }> = ({ onFindSchedule }) => {
   return (
-    <div>
-      <h2 className="text-lg text-white mb-4 text-center">Confirmed Times</h2>
-      <ul className="text-white list-disc">
-        {times.map((dayTimes, index) => (
-          <li key={index}>
-            {chosenDays[index]?.toLocaleDateString()}: {dayTimes.length > 0 ? dayTimes.join(', ') : 'No time slots selected'}
-          </li>
-        ))}
-      </ul>
-      {scheduleResponse ? (
-        <div className="mt-4">
-          <p>Backend Response:</p>
-          <p>{scheduleResponse.message}</p>
-        </div>
-      ) : (
-        <Button onClick={onFindSchedule} className="bg-green-500 text-white rounded-corners w-full mt-4">
-          Find Schedule
-        </Button>
-      )}
+    <div className="flex flex-col items-center mt-4">
+      <p className="text-white">Times confirmed!</p>
+      <Button className="mt-4 bg-green-500 text-white rounded-corners" onClick={onFindSchedule}>
+        Find My Schedule
+      </Button>
     </div>
+  );
+};
+
+const ScheduleDisplay: React.FC<{ scheduleResponse: any; }> = ({ scheduleResponse }) => {
+  return (
+    <Card className="bg-zinc-900 shadow-lg rounded-corners p-8 w-[380px]">
+      <CardHeader>
+        <CardTitle className="text-middle text-3xl">Your Schedule</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {Array.isArray(scheduleResponse?.solution) && scheduleResponse.solution.length > 0 ? (
+          <ul className="text-white">
+            {scheduleResponse.solution.map((item: [string, string], index: number) => (
+              <li key={index}>
+                {item[0]}: {item[1]}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-white">No available schedule found.</p>
+        )}
+      </CardContent>
+    </Card>
   );
 };
 

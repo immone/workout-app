@@ -119,7 +119,7 @@ const SimpleCalendarForm: React.FC<{
         />
         <Button 
           type="submit" 
-          className="bg-transparent text-white rounded-edges border border-white hover:bg-white hover:bg-opacity-10">
+          className="bg-green-500 text-white rounded-corners w-full transition duration-200 hover:bg-blue-600 mb-4">
           Submit
         </Button>
       </form>

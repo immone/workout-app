@@ -18,7 +18,9 @@ class Scheduler:
 
     def set_soft(self, soft_clauses):
         """Set the soft clauses for the scheduling problem."""
-        self.soft = soft_clauses
+        # Ensure each clause is a list
+        self.soft = [([clause] if isinstance(clause, int) else clause, weight) for clause, weight in soft_clauses]
+
 
     def set_hard(self, hard_clauses):
         """Set the hard clauses for the scheduling problem."""
@@ -34,6 +36,17 @@ class Scheduler:
         Returns:
             int: The cost of the schedule if found, else None.
         """
+        # Check if lits is a list and print debugging information
+        if not isinstance(self.lits, list):
+            raise ValueError("self.lits is not a list.")
+        
+        print("Contents of self.lits:", self.lits)
+        print("Number of literals:", len(self.lits))
+        print("Value of k:", k)
+        
+        if len(self.lits) < k:
+            raise ValueError(f"Cannot create an Exactly-K constraint with k={k} for {len(self.lits)} literals.")
+
         # Create a weighted CNF formula
         wcnf = WCNF()
         
@@ -46,14 +59,16 @@ class Scheduler:
 
         # Add hard clauses to the solver
         for clause in self.hard:
+            print("Hard clause:", clause)  # Debugging output
             rc2.add_clause(clause)  # Hard constraints must be satisfied
 
         # Add soft clauses to the solver with their respective weights
         for clause, weight in self.soft:
+            print("Soft clause:", clause, "with weight:", weight)  # Debugging output
             rc2.add_clause(clause, weight)  # Weights allow for flexibility in solutions
 
         # Compute the solution using the RC2 solver
         model = rc2.compute()
         
         # Return the cost of the solution; may want to handle if no solution exists
-        return rc2.cost if model else None
+        return (rc2.cost, model) if model else None
