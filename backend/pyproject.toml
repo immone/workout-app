@@ -20,6 +20,7 @@ pytest = "^8.3.3"
 python-sat = "^1.8.dev13"
 pypblib = "^0.0.4"
 flask-cors = "^5.0.0"
+prophet = "^1.1.6"
 
 
 [tool.poetry.group.dev.dependencies]

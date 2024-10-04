@@ -1,5 +1,8 @@
+import os
+
 from flask import Flask, jsonify, request
 from flask_cors import CORS
+from models.scheduler import Scheduler
 
 app = Flask(__name__)
 CORS(app, resources={r"*": {"origins": "*"}})
@@ -9,6 +12,8 @@ items = [
     {"id": 1, "name": "Item 1"},
     {"id": 2, "name": "Item 2"},
 ]
+
+scheduler = Scheduler()
 
 @app.route('/')
 def home():
@@ -21,7 +26,7 @@ def get_items():
 @app.route('/items', methods=['POST'])
 def create_item():  
     new_item = request.get_json()
-    new_item['id'] = len(items) + 1  # Simple ID assignment
+    new_item['id'] = len(items) + 1  # Simple ID apeotssignment
     items.append(new_item)
     return jsonify(new_item), 201
 
@@ -30,6 +35,8 @@ def create_item():
 def receive_schedule():    
     try:
         schedule_data = request.get_json()
+        times = schedule_data.get("times", [])
+        days = schedule_data.get("days", [])
         response = {
             "message": "Schedule received successfully!",
             "received_times": schedule_data.get("times", []),
