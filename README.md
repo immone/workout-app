@@ -6,10 +6,10 @@ The user wants to schedule $n$ workouts a given timeframe of available timeslots
 
 ## Approach to solution
 Given predictions as time series, form predictions for future values of "crowdnedness". This leads to a combinatorial problem, where the 
-user wants to find to the optimal time slots to minimize total "crowdedness" while meeting required number of workouts. 
+user wants to find to the optimal time slots to minimize total "crowdedness" while meeting the constraint of total required number of workouts. 
 We model this binary optimization problem as a weighted `MAX-SAT` problem, which can be solved using existing Python libraries, such as [PySAT](https://pysathq.github.io).
 
-## Setting up
+## Setting up the environment
 Install dependencies and start backend in `./backend`
 ```
 poetry install
