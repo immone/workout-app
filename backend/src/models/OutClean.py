@@ -11,4 +11,4 @@ def OutClean(file): # Remove needless columns and cleans up data for processing
     data['day'] = pd.to_datetime(data['day']).dt.strftime('%d/%m/%Y') # Set day column values to match format of UniSport day column
     data['hour'] = pd.to_numeric(data['hour'].str[:2]) # Keep only first two digit of hour column (the actual hour) and turn the value to integer type
     data = data.groupby(['day', 'hour', 'area'])['usageMinutes'].sum() # Sum usageMinutes cells in rows with the same day, hour and area
-    return datax
+    return data
