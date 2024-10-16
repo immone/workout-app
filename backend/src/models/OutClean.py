@@ -27,15 +27,19 @@ def loadcsv(): # Get the needed .csv files from the source (as we need .csv file
 # Code to clean the previously-loaded files:
 
 def OutClean(file): # Remove needless columns and cleans up data for processing
+    filename = file
+    filepath = "./outfiles/" # UniSport files are stored in a directory called 'outfiles' within the local directory the cleaner's in
+    file = filepath + filename # Solves FileNotFoundError caused by the files being in a different directory than the program
     remove = ['groupId', 'trackableId', 'sets', 'repetitions'] # Needless columns
-    file = pd.read_csv(file, compression = 'gzip') # Unzip and read files
-    for val in remove:
-        file = file.drop(val, axis = 1) # Removes columns in remove list
-    file[['day','hour']] = file.utctimestamp.apply(lambda x: pd.Series(str(x).split("T"))) # Splits utctimestamp column in date and time columns. Column names are same to UniSport date and time columns
-    file = file.drop('utctimestamp', axis = 1) # Remove utctimestamp column
-    file.insert(0, 'day', file.pop('day')) # Set day as first column
-    file.insert(1, 'hour', file.pop('hour')) # Set hour as second column
-    file['day'] = pd.to_datetime(file['day']).dt.strftime('%d/%m/%Y') # Set day column values to match format of UniSport day column
-    file['hour'] = pd.to_numeric(file['hour'].str[:2]) # Keep only first two digit of hour column (the actual hour) and turn the value to integer type
-    file = file.groupby(['day', 'hour', 'area'])['usageMinutes'].sum() # Sum usageMinutes cells in rows with the same day, hour and area
+    file = pd.read_csv(file) # Unzip and read file with pandas                                                                                              
+    file = file.drop(columns = remove, axis = 1) # Removes columns in remove list                                                                          
+    file['utctimestamp'] = (file['utctimestamp'].str.replace('T', ' ')).str.replace('.000Z', '') # Remove T within string, milliseconds and Z at end of string
+    file = file.groupby(['utctimestamp', 'area'])['usageMinutes'].sum().reset_index() # Sum usageMinutes cells in rows with the same day, hour and area
+    newfile = filepath + filename[:-7] + '_clean.csv' # Generate new file name (including path)
+    file.to_csv(newfile) # Write into new file
     return file
+
+if __name__ = '__main__':
+    loadcsv()
+    for i in os.listdir('./outfiles/'):
+        OutClean(i)
