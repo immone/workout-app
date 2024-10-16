@@ -10,4 +10,6 @@ def UniClean(file): # # Removes column of non-unique check-ins ('quantity') from
     file = file.rename(columns = {'day':'time'}) # Rename day column to time column
     file = file.drop('hour', axis = 1) # Remove hour column
     file = file.rename(columns = {'unique_accounts_quantity':'check-ins'}) # Rename second column to check-ins
+    newfile = filepath + filename[:-4] + '_clean.csv' # Generate new file name (including path)
+    file.to_csv(newfile) # Write into new file
     return file
