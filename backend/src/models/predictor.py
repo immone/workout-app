@@ -1,25 +1,27 @@
-import prophet import Prophet
+from prophet import Prophet
 import pandas as pd
 import os
+import json
 
 class WeekPred:
         def __init__(self, data_dir): # initializing the class and setting the base for where the data is stored
                 self.data_dir = data_dir
 
         def select_location(self, location):
-                fpath = os.path.join(self.data_dir, f"{location}.csv")
+                fpath = os.path.join(self.data_dir, f"{location}")
                 try: # ADD checks for having ds and y columns
                         data = pd.read_csv(fpath)
+                        data['ds'] = pd.to_datetime(data['ds'])
                         return data
                 except FileNotFoundError:
-                        print(f"Data for location '{location}' not found.")
+                        print(f"Data for location '{location}' not found at {fpath}.")
                         return None
 
         def aggregate_week(self, dataframe):
-                data['weekday'] = data['ds'].dt.dayofweek #mon-sun 0-6
-                data['hour'] = data['ds'].dt.hour
+                dataframe['weekday'] = dataframe['ds'].dt.dayofweek #mon-sun 0-6
+                dataframe['hour'] = dataframe['ds'].dt.hour
 
-                week_schedule = data.groupby(['weekday', 'hour']).y.mean().reset_index()
+                week_schedule = dataframe.groupby(['weekday', 'hour']).y.mean().reset_index()
                 return week_schedule
 
         def fit_prophet(self, data):
@@ -78,12 +80,12 @@ class WeekPred:
 # for actually running this
 
 if __name__ == "__main__":
-        directory = #insert path to the folder where data files are
-        predictor = WeekPred(directory)
+        #directory = "C:/Users/annie/Documents/Data Science/Intro to DS" #path to the folder where data files are
+        predictor = WeekPred('.')
 
         # select location and the file to output results into
-        location = "Kluuvi"
-        output_file = "kluuviforecast.json"
+        location = "testcounts.csv" #filename
+        output_file = "testforecast.json"
 
         # run predictor
         predictor.run_for_location(location, output_file)
