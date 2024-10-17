@@ -92,7 +92,7 @@ const App: React.FC = () => {
       setIsLoading(false); // Set loading state to false after the request completes
     }
   };
-  
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-zinc-950 font-sans">
       {toastMessage && <Toast message={toastMessage} />}
@@ -253,6 +253,14 @@ const ConfirmedTimesView: React.FC<{ onFindSchedule: () => void; scheduleRespons
 };
 
 const ScheduleDisplay: React.FC<{ scheduleResponse: any; isLoading: boolean }> = ({ scheduleResponse, isLoading }) => {
+  const sortedSchedule = Array.isArray(scheduleResponse?.solution)
+    ? [...scheduleResponse.solution].sort((a: [string, string, string], b: [string, string, string]) => {
+        const dateA = new Date(`${a[0]}T${a[1]}`);
+        const dateB = new Date(`${b[0]}T${b[1]}`);
+        return dateA.getTime() - dateB.getTime();
+      })
+    : [];
+
   return (
     <Card className="bg-zinc-900 shadow-lg rounded-corners p-8 w-[380px]">
       <CardHeader>
@@ -261,9 +269,9 @@ const ScheduleDisplay: React.FC<{ scheduleResponse: any; isLoading: boolean }> =
       <CardContent>
         {isLoading ? (
           <p className="text-white">Looking for your schedule, hang on!</p>
-        ) : Array.isArray(scheduleResponse?.solution) && scheduleResponse.solution.length > 0 ? (
+        ) : sortedSchedule.length > 0 ? (
           <ul className="text-white">
-            {scheduleResponse.solution.map((item: [string, string, string], index: number) => (
+            {sortedSchedule.map((item: [string, string, string], index: number) => (
               <li key={index}>
                 {item[0]}: {item[1]} in {item[2]}
               </li>
@@ -276,6 +284,7 @@ const ScheduleDisplay: React.FC<{ scheduleResponse: any; isLoading: boolean }> =
     </Card>
   );
 };
+
 
 
 export default App;

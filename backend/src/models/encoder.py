@@ -6,7 +6,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_PATH = os.path.join(BASE_DIR, "data")
 locations = [
     'kluuvi', 'kumpula', 'otaniemi',
-    'toolo', 'meilahti', 'Paloheinä', 'Pirkkola', 'Hietaniemi'
+    'toolo', 'meilahti', 'Paloheinä', 'Pirkkola'#, 'Hietaniemi'
 ]
 
 class Encoder:
@@ -21,8 +21,8 @@ class Encoder:
         self.available_locations = available_locations  
         self.date_time_loc_to_literal = {}
         self.literal_to_date_time_loc = {}
-        self.literal_groups = [[] for _ in range(len(self.available_locations))]  # 2D list for each location
-        self.date_literals = [[] for _ in self.available_dates]  # 2D list for each date
+        self.literal_groups = []  # Changed to a list to hold lists for each date
+        self.date_literals = []  
         self.date_time_loc_to_checkins = {} 
         self.generate_mappings()
         self.associate_values_from_location_files()
@@ -40,16 +40,33 @@ class Encoder:
             parsed_date, _ = self.parse_iso_format(date_str)
             day_times = self.available_times[day_idx]
             
-            # Create a list to hold literals for each time
+            # Create a list for all literals corresponding to this date
+            date_literals_for_day = []
+
+            # Create a new list to hold literals for each time on this date
+            time_literals = []
+
             for time in day_times:
+                # Create a list for this (date, time) combination
+                time_literal_group = []
+                
                 for loc_idx, location in enumerate(self.available_locations):
                     print(f"Mapping {(parsed_date, time, location)} -> {index}")
                     self.date_time_loc_to_literal[(parsed_date, time, location)] = index
                     self.literal_to_date_time_loc[index] = (parsed_date, time, location)
-
-                    self.literal_groups[loc_idx].append(index)
-                    self.date_literals[day_idx].append(index)
+                    
+                    # Add the index to the time-specific list
+                    time_literal_group.append(index)
+                    date_literals_for_day.append(index)
                     index += 1
+                
+                # Append the time-specific literals list to the overall time literals for the day
+                time_literals.append(time_literal_group)
+
+            # Append the time literals for this date to the overall literal groups
+            self.literal_groups.append(time_literals[0])
+            # Append the literals for this date to the overall date literals list
+            self.date_literals.append(date_literals_for_day)
 
     def parse_iso_format(self, iso_string):
         """Parse an ISO 8601 formatted string and return the date and time."""

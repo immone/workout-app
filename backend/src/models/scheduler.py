@@ -11,6 +11,7 @@ class Scheduler:
         self.soft = []
         # List of hard clauses
         self.hard = []
+        # List of penalty clauses
         self.penalty = []
 
     def set_lits(self, literals):
@@ -74,15 +75,16 @@ class Scheduler:
         # Initialize the RC2 solver with the WCNF
         rc2 = RC2(wcnf)
 
-        # Penalize for same day workouts
+        # No workouts for same day
         for pen in self.penalty:
-            weight = 500
-            print("Penalty clause", pen, "with weight:", weight)  # Debugging output
+            weight = 1000
+            print("Penalty clause:", pen, "with weight:", weight)
+            enc = CardEnc.atmost(lits=pen, bound=2)
             rc2.add_clause(pen, weight)
 
         # Add soft clauses to the solver with their respective weights
         for weight, clause in self.soft:
-            print("Soft clause:", clause, "with weight:", weight)  # Debugging output
+            print("Soft clause:", clause, "with weight:", weight[0])  # Debugging output
             rc2.add_clause([clause], weight[0])  # Weights allow for flexibility in solutions
 
         # Compute the solution using the RC2 solver
