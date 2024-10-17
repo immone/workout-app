@@ -37,9 +37,13 @@ def OutClean(file): # Remove needless columns and cleans up data for processing
     os.makedirs("outclean", exist_ok=True) # Directory to store the clean outdoor gym files
     file = file.groupby(['utctimestamp', 'area'])['usageMinutes'].sum().reset_index() # Sum usageMinutes cells in rows with the same day, hour and area
     file = file.rename(columns = {'utctimestamp':'DS', 'usageMinutes':'Y'}) # Rename utctimestamp to DS
-    newpath = './outclean/' # Path to clean data folder
-    newfile = newpath + filename[:-7] + '_clean.csv' # Generate new file name (including path)
-    file.to_csv(newfile) # Write into new file
+    areas = file['area'].unique() # Find all unique values of areas
+    for a in areas: # For each unique area value
+        areaset = file[file['area'] == a] # Create subset for said area
+        areaset = areaset.drop(columns = 'area', axis = 1) # Remove area column (we don't need it)
+        newpath = './outclean/' # Path to clean data folder
+        newfile = newpath + filename[:-7] + '_' + a + '_clean.csv' # Generate new file name specifying area (including path)
+        areaset.to_csv(newfile) # Write into new file
     return file
 
 if __name__ == '__main__':
