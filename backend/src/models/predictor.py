@@ -2,6 +2,9 @@ from prophet import Prophet
 import pandas as pd
 import os
 import json
+import cmdstanpy
+#cmdstanpy.install_cmdstan()
+#cmdstanpy.install_cmdstan(compiler=True)
 
 class WeekPred:
         def __init__(self, data_dir): # initializing the class and setting the base for where the data is stored
@@ -9,7 +12,7 @@ class WeekPred:
 
         def select_location(self, location):
                 fpath = os.path.join(self.data_dir, f"{location}")
-                try: # ADD checks for having ds and y columns
+                try:
                         data = pd.read_csv(fpath)
                         data['ds'] = pd.to_datetime(data['ds'])
                         return data
@@ -26,12 +29,14 @@ class WeekPred:
 
         def fit_prophet(self, data):
 
-                data['ds'] = pd.to_datetime(data['weekday'] * 24 + data['hour'], unit='h')
+                #data['ds'] = pd.to_datetime(data['weekday'] * 24 + data['hour'], unit='h')
+                data['ds'] = pd.to_datetime(data['weekday'], unit='D') + pd.to_timedelta(data['hour'], unit='h')
                 data = data[['ds', 'y']]
                 
                 model = Prophet(
                         daily_seasonality=True,
-                        weekly_seasonality=True
+                        weekly_seasonality=True,
+                        yearly_seasonality=False
                         )
                 model.fit(data)
                 return model
