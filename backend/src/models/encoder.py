@@ -1,19 +1,31 @@
+import json
+import os
 from datetime import datetime
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DATA_PATH = os.path.join(BASE_DIR, "data")
+locations = [
+    'kluuvi', 'kumpula', 'otaniemi',
+    'toolo', 'meilahti', 'Paloheinä', 'Pirkkola', 'Hietaniemi'
+]
 
 class Encoder:
     """
-        Class responsible for encoding and decoding the chosen times between integer and (date, time) representations.
-        Constructor parameters:
-            available_dates: dates in ISO 8601 format
-            available_times: suitable times as a list of strings
+    Class responsible for encoding and decoding the chosen times, dates, and locations 
+    between integer and (date, time, location) representations.
     """
-    def __init__(self, available_dates, available_times):
-        """Initialize the Encoder with available dates and times."""
+    def __init__(self, available_dates, available_times, available_locations=locations):
+        """Initialize the Encoder with available dates, times, and locations."""
         self.available_dates = self.flatten_list(available_dates)
-        self.available_times = available_times  # Keep as-is, since they are already nested lists
-        self.date_time_to_literal = {}
-        self.literal_to_date_time = {}
+        self.available_times = available_times  
+        self.available_locations = available_locations  
+        self.date_time_loc_to_literal = {}
+        self.literal_to_date_time_loc = {}
+        self.literal_groups = [[] for _ in range(len(self.available_locations))]  # 2D list for each location
+        self.date_literals = [[] for _ in self.available_dates]  # 2D list for each date
+        self.date_time_loc_to_checkins = {} 
         self.generate_mappings()
+        self.associate_values_from_location_files()
 
     def flatten_list(self, nested_list):
         """Flatten a nested list into a single list."""
@@ -22,113 +34,90 @@ class Encoder:
         return nested_list
 
     def generate_mappings(self):
-        """Generate mappings between (date, time) and literals."""
+        """Generate mappings between (date, time, location) and literals."""
         index = 1
         for day_idx, date_str in enumerate(self.available_dates):
             parsed_date, _ = self.parse_iso_format(date_str)
-            day_times = self.available_times[day_idx]  # Now treat day_times as a list of full time strings
+            day_times = self.available_times[day_idx]
             
+            # Create a list to hold literals for each time
             for time in day_times:
-                # Ensure we are mapping (date, full time string)
-                print(f"Mapping {(parsed_date, time)} -> {index}")
-                self.date_time_to_literal[(parsed_date, time)] = index
-                self.literal_to_date_time[index] = (parsed_date, time)
-                index += 1
+                for loc_idx, location in enumerate(self.available_locations):
+                    print(f"Mapping {(parsed_date, time, location)} -> {index}")
+                    self.date_time_loc_to_literal[(parsed_date, time, location)] = index
+                    self.literal_to_date_time_loc[index] = (parsed_date, time, location)
+
+                    self.literal_groups[loc_idx].append(index)
+                    self.date_literals[day_idx].append(index)
+                    index += 1
 
     def parse_iso_format(self, iso_string):
-        """
-        Parse an ISO 8601 formatted string and return the date and time.
-        
-        Args:
-            iso_string (str): An ISO 8601 formatted date-time string.
-        
-        Returns:
-            tuple: A tuple (date, time) in 'YYYY-MM-DD' and 'HH:MM' format.
-        """
+        """Parse an ISO 8601 formatted string and return the date and time."""
         date_obj = datetime.fromisoformat(iso_string.replace('Z', '+00:00'))
-        date = date_obj.strftime('%Y-%m-%d')  # Extract date in YYYY-MM-DD format
-        time = date_obj.strftime('%H:%M')     # Extract time in HH:MM format
+        date = date_obj.strftime('%Y-%m-%d')
+        time = date_obj.strftime('%H:%M')
         return date, time
 
-    def encode(self, date_time):
-        """
-        Encode a date-time tuple into an integer literal.
-
-        Args:
-            date_time (tuple): A tuple of (date, time).
-
-        Returns:
-            int: The corresponding integer literal.
-        """
-        return self.date_time_to_literal.get(date_time)
+    def encode(self, date_time_loc):
+        """Encode a (date, time, location) tuple into an integer literal."""
+        return self.date_time_loc_to_literal.get(date_time_loc)
 
     def decode(self, literal):
-        """
-        Decode an integer literal back into a date-time tuple.
-
-        Args:
-            literal (int): The integer literal to decode.
-
-        Returns:
-            tuple: The corresponding (date, time) tuple or None if the literal is invalid.
-        """
+        """Decode an integer literal back into a (date, time, location) tuple."""
         if not isinstance(literal, int):
             print(f"Error: Provided literal {literal} is not an integer.")
             return None
         
-        result = self.literal_to_date_time.get(literal)
+        result = self.literal_to_date_time_loc.get(literal)
         
         if result is None:
-            print(f"Warning: Literal {literal} does not correspond to any date-time mapping.")
+            print(f"Warning: Literal {literal} does not correspond to any date-time-location mapping.")
         
         return result
 
-    def get_encoded_values(self):
+    def associate_values_from_location_files(self):
         """
-        Get all encoded values from the available ISO strings as literals.
+        Associate the predicted check-ins from location forecast files to each encoded (date, time, location).
+        The value is stored in self.date_time_loc_to_checkins for each encoded (date, time, location) combination.
+        """
+        for (date, time, location), literal in self.date_time_loc_to_literal.items():
+            # Extract weekday and hour from the date and time
+            date_obj = datetime.strptime(date, '%Y-%m-%d')
+            weekday = date_obj.weekday()  # 0=Monday, 6=Sunday
+            hour = int(time.split(':')[0])  # Extract hour (e.g., '15:00' -> 15)
 
-        Returns:
-            list: A list of encoded integer literals.
-        """
-        encoded_values = []
-        for day_idx, date_time_str in enumerate(self.available_dates):
-            parsed_date, _ = self.parse_iso_format(date_time_str)
-            day_times = self.available_times[day_idx]  # Iterate over full time values, not characters
+            # Read the corresponding JSON forecast file for the location
+            location_file = os.path.join(DATA_PATH, f"{location}_forecast.json")
+            if not os.path.exists(location_file):
+                print(f"Error: Location forecast file {location_file} not found.")
+                continue
             
-            for time in day_times:
-                print(f"Trying to encode: {(parsed_date, time)}")
-                encoded_value = self.encode((parsed_date, time))
-                print(f"Encoded value: {encoded_value}")
-                
-                if encoded_value:
-                    encoded_values.append(encoded_value)
-        return encoded_values
+            with open(location_file, 'r') as file:
+                location_data = json.load(file)
+
+            # Find the predicted check-ins for the matching weekday and hour
+            forecast = location_data.get('week_forecast', [])
+            for entry in forecast:
+                if entry['weekday'] == weekday and entry['hour'] == hour:
+                    checkins = entry['pred_checkins']
+                    # Save check-ins as (checkins, encoded_value_of(date_time_location))
+                    self.date_time_loc_to_checkins[literal] = (checkins, literal)
+                    print(f"Associated {checkins} check-ins for encoded value {literal}.")
+                    break
+
+    def get_encoded_values(self):
+        """Get all encoded values from the available ISO strings, times, and locations as literals."""
+        encoded_values = []
+        for date_literal_group in self.date_literals:
+            encoded_values.extend(date_literal_group)  # Collect all literals for the final result
+        return encoded_values, self.date_time_loc_to_checkins, self.literal_groups, self.date_literals
 
     def get_positive_intersection(self, list1, list2):
-        """
-        Get the intersection of elements in the first list with the positive elements in the second list.
-
-        Args:
-            list1 (list): The first list of elements.
-            list2 (list): The second list, which may contain positive elements.
-
-        Returns:
-            list: A list containing the intersection.
-        """
-        # Filter positive elements from the second list
+        """Get the intersection of elements in the first list with the positive elements in the second list."""
         positive_elements = [x for x in list2 if x > 0]
-        # Return the intersection with the first list
         return list(set(list1) & set(positive_elements))
 
     def decode_list(self, literals):
-        """
-        Decode a list of integer literals back into a list of date-time tuples.
-
-        Args:
-            literals (list): A list of integer literals to decode.
-
-        Returns:
-            list: A list containing the decoded (date, time) tuples or None for invalid literals.
-        """
+        """Decode a list of integer literals back into a list of (date, time, location) tuples."""
         decoded_values = [self.decode(literal) for literal in literals]
         return decoded_values

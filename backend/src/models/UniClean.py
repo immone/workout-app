@@ -8,7 +8,7 @@ def UniClean(file): # # Removes column of non-unique check-ins ('quantity') from
     file['day'] = pd.to_datetime(pd.to_datetime(file['day']).dt.strftime('%Y-%m-%d')) # Format day column to y-m-d
     file['day'] +=  pd.to_timedelta(file.hour, unit='h') # Turn hour column integers into datetime format and add it to the day column
     file = file.drop('hour', axis = 1) # Remove hour column
-    file = file.rename(columns = {'day':'DS', 'unique_accounts_quantity':'Y'}) # Rename day column to DS column and second column to Y
+    file = file.rename(columns = {'day':'time', 'unique_accounts_quantity':'check-ins'}) # Rename day column to DS column and second column to Y
     newfile = filepath + filename[:-4] + '_clean.csv' # Generate new file name (including path)
     file.to_csv(newfile) # Write into new file
     return file

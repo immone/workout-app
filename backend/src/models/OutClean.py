@@ -36,7 +36,7 @@ def OutClean(file): # Remove needless columns and cleans up data for processing
     file['utctimestamp'] = (file['utctimestamp'].str.replace('T', ' ')).str.replace('.000Z', '') # Remove T within string, milliseconds and Z at end of string
     os.makedirs("outclean", exist_ok=True) # Directory to store the clean outdoor gym files
     file = file.groupby(['utctimestamp', 'area'])['usageMinutes'].sum().reset_index() # Sum usageMinutes cells in rows with the same day, hour and area
-    file = file.rename(columns = {'utctimestamp':'DS', 'usageMinutes':'Y'}) # Rename utctimestamp to DS
+    file = file.rename(columns = {'utctimestamp':'time', 'usageMinutes':'check-ins'}) 
     areas = file['area'].unique() # Find all unique values of areas
     for a in areas: # For each unique area value
         areaset = file[file['area'] == a] # Create subset for said area
@@ -46,7 +46,33 @@ def OutClean(file): # Remove needless columns and cleans up data for processing
         areaset.to_csv(newfile) # Write into new file
     return file
 
+def OutCleanAndSaveByArea():
+    combined_area_data = {}  # Dictionary to hold combined data for each area
+
+    # Process each raw file and clean the data
+    for filename in os.listdir('./outraw/'):
+        cleaned_data = OutClean(filename)  # Clean each file using the OutClean function
+        
+        # Loop over each unique area and aggregate the data
+        for area in cleaned_data['area'].unique():
+            print(area)
+            area_data = cleaned_data[cleaned_data['area'] == area]  # Subset data by area
+            if area not in combined_area_data:  # Initialize if area not in dictionary
+                combined_area_data[area] = area_data
+            else:  # Append data for the same area
+                combined_area_data[area] = pd.concat([combined_area_data[area], area_data], ignore_index=True)
+
+    for area, data in combined_area_data.items():
+        data['time'] = pd.to_datetime(data['time'])  
+        data = data.sort_values(by='time')  # Sort by time in ascending order
+        data.insert(0, 'row_number', range(1, len(data) + 1)) 
+        
+        area_file = f'./data/{area}.csv'  # Create output filename for each area
+        data.drop(columns='area', axis=1).to_csv(area_file, index=False)  # Save the CSV without the 'area' column
+        print(f"Saved combined data for area '{area}' to {area_file}")
+
 if __name__ == '__main__':
     loadcsv()
     for i in os.listdir('./outraw/'):
         OutClean(i)
+    OutCleanAndSaveByArea()

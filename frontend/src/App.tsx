@@ -24,6 +24,7 @@ const App: React.FC = () => {
   const [times, setTimes] = useState<string[][]>([]); 
   const [isScheduleFound, setIsScheduleFound] = useState(false);
   const [scheduleResponse, setScheduleResponse] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(false); 
 
   const handleWorkoutNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setWorkoutName(e.target.value);
@@ -64,7 +65,7 @@ const App: React.FC = () => {
     setTimes(Array(sortedDates.length).fill([])); 
   };
   const handleConfirmTimeSlot = (dayIndex: number, dayTimes: string[]) => {
-    const newTimes = [...times];
+    const newTimes = [  ...times];
     newTimes[dayIndex] = dayTimes; 
     setTimes(newTimes);
     setConfirmedDays((prev) => prev + 1);
@@ -72,23 +73,26 @@ const App: React.FC = () => {
 
   const handleFindSchedule = async () => {
     setIsScheduleFound(true);
+    setIsLoading(true); // Set loading state to true
     setToastMessage("Finding your schedule...");
-
+  
     try {
       const scheduleData = {
         times: times,
         days: chosenDays,
         n: Math.min(times.length, preferredWorkouts)
       };
-
+  
       const response = await sendSchedule(scheduleData);  
       setToastMessage("Schedule sent successfully!");
       setScheduleResponse(response);  
     } catch (error) {
       setToastMessage("Failed to send schedule.");
+    } finally {
+      setIsLoading(false); // Set loading state to false after the request completes
     }
   };
-
+  
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-zinc-950 font-sans">
       {toastMessage && <Toast message={toastMessage} />}
@@ -171,7 +175,7 @@ const App: React.FC = () => {
             </CardContent>
           </Card>
         ) : (
-          <ScheduleDisplay scheduleResponse={scheduleResponse} />
+          <ScheduleDisplay scheduleResponse={scheduleResponse} isLoading={isLoading}/>
         )}
       </main>
 
@@ -248,18 +252,20 @@ const ConfirmedTimesView: React.FC<{ onFindSchedule: () => void; scheduleRespons
   );
 };
 
-const ScheduleDisplay: React.FC<{ scheduleResponse: any; }> = ({ scheduleResponse }) => {
+const ScheduleDisplay: React.FC<{ scheduleResponse: any; isLoading: boolean }> = ({ scheduleResponse, isLoading }) => {
   return (
     <Card className="bg-zinc-900 shadow-lg rounded-corners p-8 w-[380px]">
       <CardHeader>
         <CardTitle className="text-middle text-3xl">Your Schedule</CardTitle>
       </CardHeader>
       <CardContent>
-        {Array.isArray(scheduleResponse?.solution) && scheduleResponse.solution.length > 0 ? (
+        {isLoading ? (
+          <p className="text-white">Looking for your schedule, hang on!</p>
+        ) : Array.isArray(scheduleResponse?.solution) && scheduleResponse.solution.length > 0 ? (
           <ul className="text-white">
-            {scheduleResponse.solution.map((item: [string, string], index: number) => (
+            {scheduleResponse.solution.map((item: [string, string, string], index: number) => (
               <li key={index}>
-                {item[0]}: {item[1]}
+                {item[0]}: {item[1]} in {item[2]}
               </li>
             ))}
           </ul>
@@ -270,5 +276,6 @@ const ScheduleDisplay: React.FC<{ scheduleResponse: any; }> = ({ scheduleRespons
     </Card>
   );
 };
+
 
 export default App;
