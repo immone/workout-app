@@ -98,7 +98,7 @@ class WeekPred:
                 predictions = self.predict_week(model)
 
                 if location in ["Hietaniemi.csv", "Paloheinä.csv", "Pirkkola.csv"]:
-                    predictions['check-ins'] *= 0.25
+                    predictions['check-ins'] *= 0.3
                 
 
                 output_file = f"data/{location.split('.')[0]}_forecast.json"
@@ -119,7 +119,7 @@ if __name__ == "__main__":
     locations = [
                 "toolo.csv", "kluuvi.csv", 
                 "kumpula.csv", "meilahti.csv", "otaniemi.csv",
-                "Hietaniemi.csv", "Paloheinä.csv", "Pirkkola.csv"
+                 "Paloheinä.csv", "Pirkkola.csv", #"Hietaniemi.csv",
                 ]
 
     # Run predictor for all specified locations

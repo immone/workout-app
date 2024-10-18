@@ -5,8 +5,8 @@ from datetime import datetime
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_PATH = os.path.join(BASE_DIR, "data")
 locations = [
-    'kluuvi', 'kumpula', 'otaniemi',
-    'toolo', 'meilahti', 'Paloheinä', 'Pirkkola'#, 'Hietaniemi'
+    'kluuvi', 'kumpula', #'otaniemi',
+    'toolo', 'meilahti', #'Pirkkola', #'Paloheinä', #, 'Hietaniemi'
 ]
 
 class Encoder:
@@ -62,9 +62,9 @@ class Encoder:
                 
                 # Append the time-specific literals list to the overall time literals for the day
                 time_literals.append(time_literal_group)
-
             # Append the time literals for this date to the overall literal groups
-            self.literal_groups.append(time_literals[0])
+            for l in time_literals:
+                self.literal_groups.append(l)
             # Append the literals for this date to the overall date literals list
             self.date_literals.append(date_literals_for_day)
 

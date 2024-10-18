@@ -278,7 +278,12 @@ const ScheduleDisplay: React.FC<{ scheduleResponse: any; isLoading: boolean }> =
             ))}
           </ul>
         ) : (
-          <p className="text-white">No available schedule found.</p>
+          <p className="text-white">
+            No available schedule found.
+          <p>
+            Make sure you include enough days in your schedule!
+          </p>
+          </p>
         )}
       </CardContent>
     </Card>

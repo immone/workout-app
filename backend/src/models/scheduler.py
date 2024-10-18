@@ -9,19 +9,21 @@ class Scheduler:
         self.lits = []
         # List of soft clauses in the form ([clause], weight_of_clause)
         self.soft = []
-        # List of hard clauses
+        # List of hard clauses // Note that this name is a currently little confusing and should be renamed
         self.hard = []
         # List of penalty clauses
         self.penalty = []
 
     def set_lits(self, literals):
         """Set the literals for the scheduling problem."""
+        if not isinstance(literals, list):
+            raise ValueError("literals must be a list.")
         self.lits = literals
 
     def set_soft(self, soft_clauses):
         """Set the soft clauses for the scheduling problem."""
         # Ensure each clause is a list
-        self.soft = [([clause] if isinstance(clause, int) else clause, weight) for clause, weight in soft_clauses]
+        self.soft = soft_clauses
 
     def set_penalty(self, penalty_clauses):
         """Set penalization for same day workouts"""
@@ -59,37 +61,31 @@ class Scheduler:
         enc = CardEnc.equals(lits=self.lits, bound=k)
         wcnf.extend(enc)  # Add the cardinality constraint to the WCNF
 
-        # Add hard clauses to the solver
-        # Intuitively: no overbooking
-        
-        for l in self.lits:
-            lit = [l]
-            enc = CardEnc.atmost(lits=lit, bound=1)
-            wcnf.extend(enc)
-
+        # Penalize for choosing overlapping times
         for clause in self.hard:
-            print("Hard clause:", clause)  # Debugging output
-            enc = CardEnc.atmost(lits=clause, bound=1)
-            wcnf.extend(enc)  # Hard constraints must be satisfied
+            print("Hard clause:", clause)
+            # Negate literals in the hard clause
+            wcnf.append(clause, weight=100)
+
+        # Penalize for choosing same days
+        for pen in self.penalty:
+            print("Penalty clause for same day", pen)
+            # Negate literals in the penalty clause
+            wcnf.append(pen, weight=100)
+
+        # Add soft clauses with respective weights (negated literals)
+        for weight, clause in self.soft:
+            print("Soft clause:", clause, "with weight:", weight)
+            wcnf.append([-clause], weight)  # Negate literals in the soft clause
 
         # Initialize the RC2 solver with the WCNF
         rc2 = RC2(wcnf)
-
-        # No workouts for same day
-        for pen in self.penalty:
-            weight = 1000
-            print("Penalty clause:", pen, "with weight:", weight)
-            enc = CardEnc.atmost(lits=pen, bound=2)
-            rc2.add_clause(pen, weight)
-
-        # Add soft clauses to the solver with their respective weights
-        for weight, clause in self.soft:
-            print("Soft clause:", clause, "with weight:", weight[0])  # Debugging output
-            rc2.add_clause([clause], weight[0])  # Weights allow for flexibility in solutions
-
         # Compute the solution using the RC2 solver
         print("Solving...")
         model = rc2.compute()
-        print("Found solution!")
-        # Return the cost of the solution; may want to handle if no solution exists
-        return (rc2.cost, model) if model else None
+        if model:
+            print("Found solution!")
+            return (rc2.cost, model)
+        else:
+            print("No solution found.")
+            return None
